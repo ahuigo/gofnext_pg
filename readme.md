@@ -1,5 +1,5 @@
 # gofnext_pg
-gofnext's cache decorator for postgres.
+[gofnext](https://github.com/ahuigo/gofnext)'s cache decorator for postgres.
 
 ## Cache with TTL
 Refer to: [decorator example](https://github.com/ahuigo/gofnext_pg/blob/main/examples/)
