@@ -29,6 +29,7 @@ type pgMap struct {
 	pgDb          *gorm.DB
 	ttl           time.Duration
 	errTtl        time.Duration
+	reuseTtl      time.Duration
 	tableName     string
 	maxHashKeyLen int
 	funcKey       string
@@ -173,7 +174,7 @@ func (m *pgMap) Store(key, value any, err error) {
 	}
 }
 
-func (m *pgMap) Load(key any) (value any, existed bool, err error) {
+func (m *pgMap) Load(key any) (value any, hasCache, alive bool, err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	pkey := m.strkey(key)
@@ -198,10 +199,17 @@ func (m *pgMap) Load(key any) (value any, existed bool, err error) {
 	}
 	if (m.ttl > 0 && time.Since(cacheData.CreatedAt) > m.ttl) ||
 		(m.errTtl >= 0 && cacheData.Err != nil && time.Since(cacheData.CreatedAt) > m.errTtl) {
-		return value, false, nil //expired
+		// 1. if cache is expired, but with reuseTtl, return the value
+		if m.reuseTtl > 0 && time.Since(cacheData.CreatedAt) < m.reuseTtl+m.ttl {
+			return value, true, false, nil //expired but reuse
+		} else {
+			// 2. if cache is expired, but exceed reuseTtl
+			return nil, false, false, nil //expired
+		}
+	} else {
+		// if cache is not expired, return the value
+		return value, true, true, nil
 	}
-	existed = true
-	return
 }
 
 func (m *pgMap) SetTTL(ttl time.Duration) gofnext.CacheMap {
@@ -210,6 +218,10 @@ func (m *pgMap) SetTTL(ttl time.Duration) gofnext.CacheMap {
 }
 func (m *pgMap) SetErrTTL(errTTL time.Duration) gofnext.CacheMap {
 	m.errTtl = errTTL
+	return m
+}
+func (m *pgMap) SetReuseTTL(errTTL time.Duration) gofnext.CacheMap {
+	m.reuseTtl = errTTL
 	return m
 }
 

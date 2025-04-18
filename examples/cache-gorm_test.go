@@ -2,6 +2,7 @@ package examples
 
 import (
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -59,6 +60,42 @@ func TestPgCacheFuncWithTTL(t *testing.T) {
 	}
 }
 
+func TestPgCacheFuncWithReuseTTL(t *testing.T) {
+	// Original function
+	executeCount := atomic.Int32{}
+	getNum := func(more int) (int, error) {
+		executeCount.Add(1)
+		return int(executeCount.Load()) + more, nil
+	}
+
+	// Cacheable Function
+	ttl := time.Millisecond * 100
+	reuseTTL := time.Millisecond * 50
+	getNumWithCache := gofnext.CacheFn1Err(getNum, &gofnext.Config{
+		TTL:      ttl,
+		ReuseTTL: reuseTTL,
+		CacheMap: gofnext_pg.NewCachePg("getNum").SetPgDsn(DSN).ClearCache(),
+	})
+
+	// 1. init cache: count=1
+	num, _ := getNumWithCache(0)
+	gofnext.AssertEqual(t, num, 1)
+	gofnext.AssertEqual(t, executeCount.Load(), 1)
+
+	// 2. wait ttl: count=2(async run)
+	time.Sleep(ttl)
+	num, _ = getNumWithCache(0)
+	gofnext.AssertEqual(t, num, 1)
+	time.Sleep(time.Millisecond)
+	gofnext.AssertEqual(t, executeCount.Load(), 2)
+
+	// wait reuseTTL+ttl: count=3
+	time.Sleep(reuseTTL + ttl)
+	num, _ = getNumWithCache(0)
+	gofnext.AssertEqual(t, num, 3)
+	gofnext.AssertEqual(t, executeCount.Load(), 3)
+}
+
 func TestPgCacheFuncWithNoTTL(t *testing.T) {
 	// Original function
 	executeCount := 0
@@ -73,7 +110,7 @@ func TestPgCacheFuncWithNoTTL(t *testing.T) {
 		&gofnext.Config{
 			CacheMap: gofnext_pg.NewCachePg("getuser-nottl").SetPgDsn(DSN).ClearCache(),
 		},
-	) 
+	)
 
 	// Execute the function multi times in parallel.
 	parallelCall(func() {
