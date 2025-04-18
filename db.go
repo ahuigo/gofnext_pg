@@ -12,7 +12,7 @@ import (
 var db *gorm.DB
 var SqlDb *sql.DB
 
-func GetDb() *gorm.DB {
+func GetTestDb() *gorm.DB {
 	var err error
 	dsn := "host=localhost user=role1 password='' dbname=testdb port=5432 sslmode=disable TimeZone=Asia/Shanghai"
 	//dsn:="host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
@@ -41,7 +41,4 @@ func GetDb() *gorm.DB {
 	}
 
 	return db
-}
-func init() {
-	GetDb()
 }
