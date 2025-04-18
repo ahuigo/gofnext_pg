@@ -1,5 +1,5 @@
-github.com/ahuigo/gofnext v0.0.20 h1:kUvpa5Rezmh6orHudMP3/DrpvgmytBUhq5xcEgDu0CY=
-github.com/ahuigo/gofnext v0.0.20/go.mod h1:vs7VpfzqILdSjoPx4Fx5VXj2fKQhmYJzA93wmO2uTWs=
+github.com/ahuigo/gofnext v0.1.2 h1:Jhfd73/MisVv9ib9yreaC7m1/SLbfcSvAQujic4HrsA=
+github.com/ahuigo/gofnext v0.1.2/go.mod h1:lwqav6XUkeyLDqxM++aiCnU358CLdDB73w0HETc9Ah8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
