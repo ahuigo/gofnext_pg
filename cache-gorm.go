@@ -20,8 +20,9 @@ import (
 )
 
 type CacheTable struct {
-	Key   string `gorm:"primaryKey;type:varchar(2048);not null"`
-	Value []byte `gorm:"type:bytea"`
+	Key       string `gorm:"primaryKey;type:varchar(2048);not null"`
+	Value     []byte `gorm:"type:bytea"`
+	CreatedAt time.Time
 }
 
 type pgMap struct {
@@ -61,8 +62,7 @@ func (m *pgMap) SetPgDsn(dsn string) *pgMap {
 	if err != nil {
 		panic(err)
 	}
-	m.pgDb = db
-	m.initTable()
+	m.SetPgDb(db)
 	return m
 }
 
