@@ -3,7 +3,7 @@ module github.com/ahuigo/gofnext_pg
 go 1.21.1
 
 require (
-	github.com/ahuigo/gofnext v0.1.2
+	github.com/ahuigo/gofnext v0.1.3
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.12
 )
