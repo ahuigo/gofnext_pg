@@ -1,7 +1,8 @@
 package gofnext_pg
 
 import (
-	"encoding/json"
+	"bytes"
+	"encoding/gob"
 	"errors"
 	"hash/fnv"
 	"strconv"
@@ -147,7 +148,13 @@ func (m *pgMap) strkey(key any) string {
 
 func (m *pgMap) Store(key, value any, err error) {
 	pkey := m.strkey(key)
-	data, _ := json.Marshal(value)
+	buf := &bytes.Buffer{}
+	if err0 := gob.NewEncoder(buf).Encode(value); err0 != nil {
+		println("gofnext encode data error:", err0.Error())
+		return
+	}
+	// data, _ := json.Marshal(value)
+	data := buf.Bytes()
 	cacheData := pgData{
 		Data: data,
 		// TTL:  m.ttl,
@@ -161,8 +168,15 @@ func (m *pgMap) Store(key, value any, err error) {
 	if err != nil {
 		cacheData.Err = []byte(err.Error())
 	}
-	val, _ := json.Marshal(cacheData)
-	p := CacheTable{Key: pkey, Value: []byte(val)}
+
+	buf = &bytes.Buffer{}
+	if err0 := gob.NewEncoder(buf).Encode(cacheData); err0 != nil {
+		println("gofnext encode data error:", err0.Error())
+		return
+	}
+
+	val := buf.Bytes()
+	p := CacheTable{Key: pkey, Value: val}
 	err = m.Table().
 		Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "key"}},
@@ -188,7 +202,7 @@ func (m *pgMap) Load(key any) (value any, hasCache, alive bool, err error) {
 		return
 	}
 	cacheData := pgData{}
-	err = json.Unmarshal(vals[0], &cacheData)
+	err = gob.NewDecoder(bytes.NewBuffer(vals[0])).Decode(&cacheData)
 	if err != nil {
 		return
 	}
