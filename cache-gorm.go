@@ -24,6 +24,7 @@ type CacheTable struct {
 	Key       string `gorm:"primaryKey;type:varchar(2048);not null"`
 	Value     []byte `gorm:"type:bytea"`
 	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type pgMap struct {
@@ -45,13 +46,13 @@ type pgData struct {
 	// TTL       time.Duration
 }
 
-func NewCachePg(funcKey string) *pgMap {
-	if funcKey == "" {
+func NewCachePg(keyPrefix string) *pgMap {
+	if keyPrefix == "" {
 		panic("NewCachePg: funcKey can not be empty")
 	}
 	return &pgMap{
 		tableName: "gofnext_cache_map",
-		funcKey:   funcKey,
+		funcKey:   keyPrefix,
 	}
 }
 
@@ -143,7 +144,7 @@ func (m *pgMap) strkey(key any) string {
 			r = hex.EncodeToString(hash[:])
 		}
 	}
-	return m.funcKey + r
+	return m.funcKey + "_" + r
 }
 
 func (m *pgMap) Store(key, value any, err error) {
