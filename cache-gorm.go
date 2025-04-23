@@ -1,10 +1,9 @@
 package gofnext_pg
 
 import (
-	"bytes"
-	"encoding/gob"
 	"errors"
 	"hash/fnv"
+	"log/slog"
 	"strconv"
 	"sync"
 	"time"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/ahuigo/gofnext"
 	"github.com/ahuigo/gofnext/serial"
+	"github.com/vmihailenco/msgpack/v5"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -144,18 +144,22 @@ func (m *pgMap) strkey(key any) string {
 			r = hex.EncodeToString(hash[:])
 		}
 	}
-	return m.funcKey + "_" + r
+	return m.funcKey + ":" + r
 }
 
 func (m *pgMap) Store(key, value any, err error) {
 	pkey := m.strkey(key)
-	buf := &bytes.Buffer{}
-	if err0 := gob.NewEncoder(buf).Encode(value); err0 != nil {
-		println("gofnext encode data error:", err0.Error())
+	// buf := &bytes.Buffer{}
+	// if err0 := gob.NewEncoder(buf).Encode(value); err0 != nil {
+	// 	println("gofnext encode data error:", err0.Error())
+	// 	return
+	// }
+	data, err0 := msgpack.Marshal(value)
+	if err0 != nil {
+		slog.Warn("gofnext_pg encode data error:", "err", err0.Error())
 		return
 	}
 	// data, _ := json.Marshal(value)
-	data := buf.Bytes()
 	cacheData := pgData{
 		Data: data,
 		// TTL:  m.ttl,
@@ -170,13 +174,18 @@ func (m *pgMap) Store(key, value any, err error) {
 		cacheData.Err = []byte(err.Error())
 	}
 
-	buf = &bytes.Buffer{}
-	if err0 := gob.NewEncoder(buf).Encode(cacheData); err0 != nil {
-		println("gofnext encode data error:", err0.Error())
+	// buf = &bytes.Buffer{}
+	// if err0 := gob.NewEncoder(buf).Encode(cacheData); err0 != nil {
+	// 	println("gofnext encode data error:", err0.Error())
+	// 	return
+	// }
+
+	// val := buf.Bytes()
+	val, err0 := msgpack.Marshal(cacheData)
+	if err0 != nil {
+		slog.Warn("gofnext_pg encode data error:", "err", err0.Error())
 		return
 	}
-
-	val := buf.Bytes()
 	p := CacheTable{Key: pkey, Value: val}
 	err = m.Table().
 		Clauses(clause.OnConflict{
@@ -203,7 +212,7 @@ func (m *pgMap) Load(key any) (value any, hasCache, alive bool, err error) {
 		return
 	}
 	cacheData := pgData{}
-	err = gob.NewDecoder(bytes.NewBuffer(vals[0])).Decode(&cacheData)
+	err = msgpack.Unmarshal(vals[0], &cacheData)
 	if err != nil {
 		return
 	}
